@@ -4,17 +4,17 @@
 
 _pkgname=xf86-input-evdev
 pkgname=${_pkgname}-trackpoint
-pkgver=2.9.2
+pkgver=2.8.3
 pkgrel=1
 _pkgname2=xf86-input-synaptics
-_pkgver2=1.8.2
+_pkgver2=1.7.5
 pkgdesc="X.org evdev input driver for trackpoint with clickpad"
 arch=(i686 x86_64)
 url="http://xorg.freedesktop.org/"
 license=('custom')
-depends=('glibc' 'systemd' 'mtdev' 'libxtst' 'libevdev')
+depends=('glibc' 'systemd' 'mtdev' 'libxtst')
 makedepends=('xorg-server-devel' 'resourceproto' 'scrnsaverproto' 'libxi' 'libx11' 'X-ABI-XINPUT_VERSION>=19' 'autoconf')
-conflicts=('xorg-server<1.14.0' 'X-ABI-XINPUT_VERSION<19' 'X-ABI-XINPUT_VERSION>=22' 'xf86-input-evdev')
+conflicts=('xorg-server<1.14.0' 'X-ABI-XINPUT_VERSION<19' 'X-ABI-XINPUT_VERSION>=21' 'xf86-input-evdev')
 replaces=("${_pkgname}")
 provides=("${_pkgname}")
 options=('!makeflags')
@@ -22,17 +22,23 @@ backup=('etc/X11/xorg.conf.d/90-evdev-trackpoint.conf')
 source=(${url}/releases/individual/driver/${_pkgname}-${pkgver}.tar.bz2
 	${url}/releases/individual/driver/${_pkgname2}-${_pkgver2}.tar.bz2
 	0001-implement-trackpoint-wheel-emulation.patch
-	0004-disable-clickpad_guess_clickfingers.patch
-	0006-add-synatics-files-into-Makefile.am.patch
-	0007-detect-palm-pressure.patch
+	0005-can-be-responsive-to-touch-pressure-not-click.patch
+	0006-SoftButtonAreas-is-replaced-by-new-three-options.patch
+	0009-Set-default-finger_press-value-to-1000.-This-disable.patch
+	0010-Fix-xinput-properties-mismatch.patch
+	0011-Fix-unintended-right-button-click.patch
+	0013-add-synatics-files-into-Makefile.am.patch
 	90-evdev-trackpoint.conf)
-sha256sums=('792329b531afc6928ccda94e4b51a5520d4ddf8ef9a00890a5d0d31898acefec'
-            '7b0e164ebd02a680e0c695955e783059f37edb0c2656398e0a972adc8e698c80'
-            '1df30c030522d48dd1a134f9cf3acb44876950836b80eb56436414d6fd062d34'
-            '74c508e1173254af8e4a851bf05762a1cd7dc194079b875ea0226913297db362'
-            '9fc80868f6fae1c41a4d31bd77daa5d4e8832628c7e4e13f9645647bdd01b0f8'
-            '750215baa375e83d77bc35906408bf340e26dc792ac7f460f37159d154413a6f'
-            '9dd49bcfe68224a7a826070f44b54cbdd349f76f9e16291d5051b3a87e8bf81e')
+sha256sums=('02ec7fd68635bd67be10275ba23f6c301a9109d72cac9c8646e28842003c06b0'
+            '1f8423521ff747efa9d84ef33126ad4bbe27d5904731115aa70247bc388c91c7'
+            '430e8528a230ace300480f06d55937355b228e0dfe6009b9ddd375e844febc06'
+            '16e17ed1403f6d409a00141f25883211f91f29f550c1e6e3f8ff95469f938455'
+            '998447914ea75d363be29e1f5cb163bf8bfae3f2d93154f923ba007c7cc5afa8'
+            '0b927e491a716c525bcbd2e7b232ec6110b3ec925ccd68b9ee45270f4e4c8652'
+            'c9e3b519e5c91947a18b08627d5351b254d99a4ae2f1763be95cab9c9f4e420a'
+            '3028f8430195daaa68788c068adff749c271721be59bbee56936993d70656565'
+            '07788a64f4033e2bc5dbefb3b29c21064d2759533a7f3f320bc6184b442d2e21'
+            'baf38c7e399814de711fe0da1c55d345a04d19bd404336cb1f0581bfe46b118f')
 install=xf86-input-evdev-trackpoint.install
 
 prepare() {
@@ -45,9 +51,12 @@ synaptics.c,synapticsstr.h,synproto.c,synproto.h} src/
   cp ${synaptics_srcdir}/include/synaptics-properties.h include/
 
   patch -p1 -i ../0001-implement-trackpoint-wheel-emulation.patch
-  patch -p1 -i ../0004-disable-clickpad_guess_clickfingers.patch
-  patch -p1 -i ../0006-add-synatics-files-into-Makefile.am.patch
-  patch -p1 -i ../0007-detect-palm-pressure.patch
+  patch -p1 -i ../0005-can-be-responsive-to-touch-pressure-not-click.patch
+  patch -p1 -i ../0006-SoftButtonAreas-is-replaced-by-new-three-options.patch
+  patch -p1 -i ../0009-Set-default-finger_press-value-to-1000.-This-disable.patch
+  patch -p1 -i ../0010-Fix-xinput-properties-mismatch.patch
+  patch -p1 -i ../0011-Fix-unintended-right-button-click.patch
+  patch -p1 -i ../0013-add-synatics-files-into-Makefile.am.patch
 }
 
 build() {

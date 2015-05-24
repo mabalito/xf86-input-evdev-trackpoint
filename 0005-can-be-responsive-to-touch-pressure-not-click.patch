@@ -1,0 +1,71 @@
+From f78da5d08a58277822ff27fcda6873ce1ae47438 Mon Sep 17 00:00:00 2001
+From: Taegil Bae <esrevinu@gmail.com>
+Date: Mon, 9 Dec 2013 14:29:40 +0900
+Subject: [PATCH 05/13] can be responsive to touch pressure, not click
+
+---
+ src/synaptics.c               | 32 ++++++++++++++++++--------------
+ 2 files changed, 21 insertions(+), 14 deletions(-)
+
+diff --git a/src/synaptics.c b/src/synaptics.c
+index c3b639f..26aeaf2 100644
+--- a/src/synaptics.c
++++ b/src/synaptics.c
+@@ -648,6 +648,7 @@ set_default_parameters(InputInfoPtr pInfo)
+ 
+     pars->finger_low = xf86SetIntOption(opts, "FingerLow", fingerLow);
+     pars->finger_high = xf86SetIntOption(opts, "FingerHigh", fingerHigh);
++    pars->finger_press = xf86SetIntOption(opts, "FingerPress", 70);
+     pars->tap_time = xf86SetIntOption(opts, "MaxTapTime", 180);
+     pars->tap_move = xf86SetIntOption(opts, "MaxTapMove", tapMove);
+     pars->tap_time_2 = xf86SetIntOption(opts, "MaxDoubleTapTime", 180);
+@@ -2579,22 +2580,24 @@ update_hw_button_state(const InputInfoPtr pInfo, struct SynapticsHwState *hw,
+     if (para->clickpad) {
+         /* hw->left is down, but no other buttons were already down */
+         if (!old->left && !old->right && !old->middle &&
+-            hw->left && !hw->right && !hw->middle && !hw->trackpoint_middle) {
+-                if (is_inside_rightbutton_area(para, hw->x, hw->y)) {
+-                    hw->left = 0;
+-                    hw->right = 1;
+-                }
+-                else if (is_inside_middlebutton_area(para, hw->x, hw->y)) {
+-                    hw->left = 0;
+-                    hw->middle = 1;
+-                    if (trackpoint) {
+-                        hw->middle = 0;
+-                        hw->trackpoint_middle = 1;
+-                        EvdevWheelEmuFilterButton(trackpoint, 2, 1);
+-                    }
++            (hw->left || hw->z > para->finger_press) &&
++            !hw->right && !hw->middle && !hw->trackpoint_middle) {
++            hw->left = 1;
++            if (is_inside_rightbutton_area(para, hw->x, hw->y)) {
++                hw->left = 0;
++                hw->right = 1;
++            }
++            else if (is_inside_middlebutton_area(para, hw->x, hw->y)) {
++                hw->left = 0;
++                hw->middle = 1;
++                if (trackpoint) {
++                    hw->middle = 0;
++                    hw->trackpoint_middle = 1;
++                    EvdevWheelEmuFilterButton(trackpoint, 2, 1);
+                 }
++            }
+         }
+-        else if (hw->left) {
++        else if (hw->left || hw->z > para->finger_press / 2) {
+             hw->left = old->left;
+             hw->right = old->right;
+             hw->middle = old->middle;
+@@ -2778,6 +2781,7 @@ filter_jitter(SynapticsPrivate * priv, int *x, int *y)
+ static void
+ reset_hw_state(struct SynapticsHwState *hw)
+ {
++    hw->left = 0;
+     hw->x = 0;
+     hw->y = 0;
+     hw->z = 0;
+-- 
+1.9.0
+

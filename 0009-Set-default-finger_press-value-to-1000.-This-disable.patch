@@ -1,0 +1,26 @@
+From 782898e83dd08c7ef1c2831015e2b53c64ce06ee Mon Sep 17 00:00:00 2001
+From: Taegil Bae <esrevinu@gmail.com>
+Date: Fri, 13 Dec 2013 23:48:02 +0900
+Subject: [PATCH 09/13] Set default finger_press value to 1000. This disables
+ the related feature.
+
+---
+ src/synaptics.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/synaptics.c b/src/synaptics.c
+index 7b615a1..5b5e585 100644
+--- a/src/synaptics.c
++++ b/src/synaptics.c
+@@ -600,7 +600,7 @@ set_default_parameters(InputInfoPtr pInfo)
+ 
+     pars->finger_low = xf86SetIntOption(opts, "FingerLow", fingerLow);
+     pars->finger_high = xf86SetIntOption(opts, "FingerHigh", fingerHigh);
+-    pars->finger_press = xf86SetIntOption(opts, "FingerPress", 70);
++    pars->finger_press = xf86SetIntOption(opts, "FingerPress", 1000);
+     pars->tap_time = xf86SetIntOption(opts, "MaxTapTime", 180);
+     pars->tap_move = xf86SetIntOption(opts, "MaxTapMove", tapMove);
+     pars->tap_time_2 = xf86SetIntOption(opts, "MaxDoubleTapTime", 180);
+-- 
+1.9.0
+

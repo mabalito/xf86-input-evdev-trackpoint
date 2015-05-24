@@ -1,0 +1,35 @@
+From 3a4e73de5f3a8a9f9ecf847b64f45c11d54ca22e Mon Sep 17 00:00:00 2001
+From: Taegil Bae <esrevinu@gmail.com>
+Date: Fri, 20 Dec 2013 09:30:20 +0900
+Subject: [PATCH 11/13] Fix unintended right-button click
+
+---
+ src/synaptics.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/src/synaptics.c b/src/synaptics.c
+index f515606..67f88cc 100644
+--- a/src/synaptics.c
++++ b/src/synaptics.c
+@@ -2531,6 +2531,7 @@ update_hw_button_state(const InputInfoPtr pInfo, struct SynapticsHwState *hw,
+ {
+     SynapticsPrivate *priv = (SynapticsPrivate *) (pInfo->private);
+     SynapticsParameters *para = &priv->synpara;
++    int isclicked = hw->left;
+ 
+     /* Treat the first two multi buttons as up/down for now. */
+     hw->up |= hw->multi[0];
+@@ -2579,8 +2580,8 @@ update_hw_button_state(const InputInfoPtr pInfo, struct SynapticsHwState *hw,
+     /* Fingers emulate other buttons. ClickFinger can only be
+        triggered on transition, when left is pressed
+      */
+-    if (hw->left && !old->left && !old->middle && !old->right &&
+-        hw->numFingers >= 1) {
++    if (isclicked && !old->left && !old->middle && !old->right &&
++        !hw->trackpoint_middle && hw->numFingers >= 1) {
+         handle_clickfinger(priv, hw);
+     }
+ 
+-- 
+1.9.0
+

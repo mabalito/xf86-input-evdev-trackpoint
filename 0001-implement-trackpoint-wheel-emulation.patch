@@ -1,22 +1,22 @@
-From 3a5ea080e77dd6b77d18eff51121e48ee97d09b3 Mon Sep 17 00:00:00 2001
+From 908a3f636744bf2f4d8a0895c390a6fb627cd2b6 Mon Sep 17 00:00:00 2001
 From: Taegil Bae <esrevinu@gmail.com>
 Date: Thu, 12 Dec 2013 20:52:48 +0900
-Subject: [PATCH 1/6] implement trackpoint wheel emulation
+Subject: [PATCH 01/13] implement trackpoint wheel emulation
 
 ---
- src/evdev.c        | 33 ++++++++++++++++++++++++++-
- src/evdev.h        |  2 ++
- src/synaptics.c    | 66 ++++++++++++++++++++++++++++++++++++------------------
+ src/evdev.c        | 34 ++++++++++++++++++++++++++++-
+ src/evdev.h        |  1 +
+ src/synaptics.c    | 64 +++++++++++++++++++++++++++++++++++-------------------
  src/synapticsstr.h |  1 +
  src/synproto.c     |  2 +-
  src/synproto.h     |  4 ++++
- 6 files changed, 84 insertions(+), 24 deletions(-)
+ 6 files changed, 82 insertions(+), 24 deletions(-)
 
 diff --git a/src/evdev.c b/src/evdev.c
-index 30f809b..d860836 100644
+index af4aba3..4476099 100644
 --- a/src/evdev.c
 +++ b/src/evdev.c
-@@ -115,6 +115,9 @@ static int proximity_bits[] = {
+@@ -113,6 +113,9 @@ static int proximity_bits[] = {
          BTN_TOOL_LENS,
  };
  
@@ -26,16 +26,16 @@ index 30f809b..d860836 100644
  static int EvdevOn(DeviceIntPtr);
  static int EvdevCache(InputInfoPtr pInfo);
  static void EvdevKbdCtrl(DeviceIntPtr device, KeybdCtrl *ctrl);
-@@ -141,6 +144,8 @@ static Atom prop_device;
+@@ -138,6 +141,8 @@ static Atom prop_btn_label;
+ static Atom prop_device;
  static Atom prop_virtual;
- static Atom prop_scroll_dist;
  
 +InputInfoPtr trackpoint = NULL;
 +
- static int EvdevSwitchMode(ClientPtr client, DeviceIntPtr device, int mode)
- {
-     InputInfoPtr pInfo;
-@@ -969,7 +974,7 @@ static void EvdevPostQueuedEvents(InputInfoPtr pInfo, int num_v, int first_v,
+ /* All devices the evdev driver has allocated and knows about.
+  * MAXDEVICES is safe as null-terminated array, as two devices (VCP and VCK)
+  * cannot be used by evdev, leaving us with a space of 2 at the end. */
+@@ -1007,7 +1012,7 @@ static void EvdevPostQueuedEvents(InputInfoPtr pInfo, int num_v, int first_v,
   * Take the synchronization input event and process it accordingly; the motion
   * notify events are sent first, then any button/key press/release events.
   */
@@ -44,7 +44,15 @@ index 30f809b..d860836 100644
  EvdevProcessSyncEvent(InputInfoPtr pInfo, struct input_event *ev)
  {
      int i;
-@@ -2510,6 +2515,11 @@ static void
+@@ -1430,6 +1435,7 @@ EvdevAddAbsValuatorClass(DeviceIntPtr device, int want_scroll_axes)
+         if (pEvdev->mtdev->caps.slot.maximum > 0)
+             num_touches = pEvdev->mtdev->caps.slot.maximum -
+                           pEvdev->mtdev->caps.slot.minimum + 1;
++        xf86IDrvMsg(pInfo, X_INFO, "num_touches = %d\n", num_touches);
+ 
+         if (!InitTouchClassDeviceStruct(device, num_touches, mode,
+                                         num_mt_axes_total)) {
+@@ -2538,6 +2544,11 @@ static void
  EvdevUnInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags)
  {
      EvdevPtr pEvdev = pInfo ? pInfo->private : NULL;
@@ -56,9 +64,9 @@ index 30f809b..d860836 100644
      if (pEvdev)
      {
          /* Release string allocated in EvdevOpenDevice. */
-@@ -2521,6 +2531,12 @@ EvdevUnInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags)
- 
-         libevdev_free(pEvdev->dev);
+@@ -2547,6 +2558,12 @@ EvdevUnInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags)
+         free(pEvdev->type_name);
+         pEvdev->type_name = NULL;
      }
 +
 +    /* TrackPoint */
@@ -69,7 +77,7 @@ index 30f809b..d860836 100644
      xf86DeleteInput(pInfo, flags);
  }
  
-@@ -2559,6 +2575,9 @@ EvdevAlloc(InputInfoPtr pInfo)
+@@ -2578,6 +2595,9 @@ EvdevAlloc(void)
      pEvdev->rel_axis_map[1] = 1;
  
      pEvdev->type_name = NULL;
@@ -79,7 +87,7 @@ index 30f809b..d860836 100644
  
      return pEvdev;
  }
-@@ -2577,6 +2596,11 @@ EvdevPreInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags)
+@@ -2596,6 +2616,11 @@ EvdevPreInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags)
      pInfo->device_control = EvdevProc;
      pInfo->read_input = EvdevReadInput;
      pInfo->switch_mode = EvdevSwitchMode;
@@ -91,7 +99,7 @@ index 30f809b..d860836 100644
  
      rc = EvdevOpenDevice(pInfo);
      if (rc != Success)
-@@ -2604,6 +2628,13 @@ EvdevPreInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags)
+@@ -2622,6 +2647,13 @@ EvdevPreInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags)
          rc = BadMatch;
          goto error;
      }
@@ -106,20 +114,19 @@ index 30f809b..d860836 100644
      /* Overwrite type_name with custom-defined one (#62831).
         Note: pInfo->type_name isn't freed so we need to manually do this
 diff --git a/src/evdev.h b/src/evdev.h
-index 520d017..341fd91 100644
+index 4742b43..c79c8d7 100644
 --- a/src/evdev.h
 +++ b/src/evdev.h
-@@ -152,6 +152,8 @@ typedef struct {
+@@ -150,6 +150,7 @@ typedef struct {
  } EventQueueRec, *EventQueuePtr;
  
  typedef struct {
 +    int isSynaptics;
-+
-     struct libevdev *dev;
+     unsigned short id_vendor;
+     unsigned short id_product;
  
-     char *device;
 diff --git a/src/synaptics.c b/src/synaptics.c
-index b25c902..aa7725d 100644
+index eb38271..c3b639f 100644
 --- a/src/synaptics.c
 +++ b/src/synaptics.c
 @@ -1,20 +1,20 @@
@@ -201,7 +208,7 @@ index b25c902..aa7725d 100644
  static Bool DeviceControl(DeviceIntPtr, int);
  static void ReadInput(InputInfoPtr);
  static int HandleState(InputInfoPtr, struct SynapticsHwState *, CARD32 now,
-@@ -834,7 +842,7 @@ SynapticsAccelerationProfile(DeviceIntPtr dev,
+@@ -774,7 +782,7 @@ SynapticsAccelerationProfile(DeviceIntPtr dev,
      return accelfct;
  }
  
@@ -210,7 +217,7 @@ index b25c902..aa7725d 100644
  SynapticsPreInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags)
  {
      SynapticsPrivate *priv;
-@@ -850,6 +858,8 @@ SynapticsPreInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags)
+@@ -790,6 +798,8 @@ SynapticsPreInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags)
      pInfo->control_proc = ControlProc;
      pInfo->switch_mode = SwitchMode;
      pInfo->private = priv;
@@ -219,7 +226,7 @@ index b25c902..aa7725d 100644
  
      /* allocate now so we don't allocate in the signal handler */
      priv->timer = TimerSet(NULL, 0, 0, NULL, NULL);
-@@ -929,7 +939,7 @@ SynapticsPreInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags)
+@@ -870,7 +880,7 @@ SynapticsPreInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags)
  /*
   *  Uninitialize the device.
   */
@@ -228,32 +235,30 @@ index b25c902..aa7725d 100644
  SynapticsUnInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags)
  {
      SynapticsPrivate *priv = ((SynapticsPrivate *) pInfo->private);
-@@ -2787,7 +2797,9 @@ update_hw_button_state(const InputInfoPtr pInfo, struct SynapticsHwState *hw,
-      * the soft button instead. */
+@@ -2569,7 +2579,7 @@ update_hw_button_state(const InputInfoPtr pInfo, struct SynapticsHwState *hw,
      if (para->clickpad) {
          /* hw->left is down, but no other buttons were already down */
--        if (!(priv->lastButtons & 7) && hw->left && !hw->right && !hw->middle) {
-+        if (!(priv->lastButtons & 7) &&
-+	    hw->left && !hw->right && !hw->middle &&
-+	    !hw->trackpoint_middle) {
-             /* If the finger down event is delayed, the x and y
-              * coordinates are stale so we delay processing the click */
-             if (hw->z < para->finger_low) {
-@@ -2805,6 +2817,11 @@ update_hw_button_state(const InputInfoPtr pInfo, struct SynapticsHwState *hw,
-             else if (is_inside_middlebutton_area(para, hw->x, hw->y)) {
-                 hw->left = 0;
-                 hw->middle = 1;
-+                if (trackpoint) {
-+                    hw->middle = 0;
-+                    hw->trackpoint_middle = 1;
-+                    EvdevWheelEmuFilterButton(trackpoint, 2, 1);
-+                }
-             }
-             else if (is_inside_sec_middlebutton_area(para, hw->x, hw->y)) {
-                 hw->left = 0;
-@@ -2817,6 +2834,11 @@ update_hw_button_state(const InputInfoPtr pInfo, struct SynapticsHwState *hw,
-             hw->middle = (priv->lastButtons & 2) ? 1 : 0;
-             hw->right  = (priv->lastButtons & 4) ? 1 : 0;
+         if (!old->left && !old->right && !old->middle &&
+-            hw->left && !hw->right && !hw->middle) {
++            hw->left && !hw->right && !hw->middle && !hw->trackpoint_middle) {
+                 if (is_inside_rightbutton_area(para, hw->x, hw->y)) {
+                     hw->left = 0;
+                     hw->right = 1;
+@@ -2577,6 +2587,11 @@ update_hw_button_state(const InputInfoPtr pInfo, struct SynapticsHwState *hw,
+                 else if (is_inside_middlebutton_area(para, hw->x, hw->y)) {
+                     hw->left = 0;
+                     hw->middle = 1;
++                    if (trackpoint) {
++                        hw->middle = 0;
++                        hw->trackpoint_middle = 1;
++                        EvdevWheelEmuFilterButton(trackpoint, 2, 1);
++                    }
+                 }
+         }
+         else if (hw->left) {
+@@ -2584,6 +2599,11 @@ update_hw_button_state(const InputInfoPtr pInfo, struct SynapticsHwState *hw,
+             hw->right = old->right;
+             hw->middle = old->middle;
          }
 +        else if (hw->trackpoint_middle) {
 +            hw->trackpoint_middle = 0;
@@ -264,10 +269,10 @@ index b25c902..aa7725d 100644
  
      /* Fingers emulate other buttons. ClickFinger can only be
 diff --git a/src/synapticsstr.h b/src/synapticsstr.h
-index 4bd32ac..1ca02ac 100644
+index 428befa..696a4f0 100644
 --- a/src/synapticsstr.h
 +++ b/src/synapticsstr.h
-@@ -229,6 +229,7 @@ typedef struct _SynapticsParameters {
+@@ -191,6 +191,7 @@ typedef struct _SynapticsParameters {
  } SynapticsParameters;
  
  struct _SynapticsPrivateRec {
@@ -287,7 +292,7 @@ index 91e20e6..143160c 100644
   * Permission is hereby granted, free of charge, to any person obtaining a
   * copy of this software and associated documentation files (the "Software"),
 diff --git a/src/synproto.h b/src/synproto.h
-index c52838c..3ba3617 100644
+index f164393..ff8e712 100644
 --- a/src/synproto.h
 +++ b/src/synproto.h
 @@ -31,6 +31,8 @@
@@ -299,7 +304,7 @@ index c52838c..3ba3617 100644
  #include <unistd.h>
  #include <sys/ioctl.h>
  #include <xf86Xinput.h>
-@@ -74,6 +76,8 @@ struct SynapticsHwState {
+@@ -70,6 +72,8 @@ struct SynapticsHwState {
  
      Bool multi[8];
      Bool middle;                /* Some ALPS touchpads have a middle button */
@@ -309,5 +314,5 @@ index c52838c..3ba3617 100644
      int num_mt_mask;
      ValuatorMask **mt_mask;
 -- 
-1.9.3
+1.9.0
 

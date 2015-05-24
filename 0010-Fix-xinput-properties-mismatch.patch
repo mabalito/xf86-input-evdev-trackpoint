@@ -1,0 +1,83 @@
+From b024be3a57d63c15ab612bb675f559ab28e4d9bc Mon Sep 17 00:00:00 2001
+From: Taegil Bae <esrevinu@gmail.com>
+Date: Wed, 18 Dec 2013 00:59:08 +0900
+Subject: [PATCH 10/13] Fix xinput properties mismatch
+
+---
+ src/properties.c | 29 +++++++++++++++++------------
+ src/synaptics.c  |  2 ++
+ 2 files changed, 19 insertions(+), 12 deletions(-)
+
+diff --git a/src/properties.c b/src/properties.c
+index 797f1da..b732bbc 100644
+--- a/src/properties.c
++++ b/src/properties.c
+@@ -159,18 +159,22 @@ InitSoftButtonProperty(InputInfoPtr pInfo)
+ {
+     SynapticsPrivate *priv = (SynapticsPrivate *) pInfo->private;
+     SynapticsParameters *para = &priv->synpara;
+-    int values[8];
+-
+-    values[0] = para->softbutton_areas[0][0];
+-    values[1] = para->softbutton_areas[0][1];
+-    values[2] = para->softbutton_areas[0][2];
+-    values[3] = para->softbutton_areas[0][3];
+-    values[4] = para->softbutton_areas[1][0];
+-    values[5] = para->softbutton_areas[1][1];
+-    values[6] = para->softbutton_areas[1][2];
+-    values[7] = para->softbutton_areas[1][3];
++    int values[12];
++
++    values[0]  = para->softbutton_areas[0][0];
++    values[1]  = para->softbutton_areas[0][1];
++    values[2]  = para->softbutton_areas[0][2];
++    values[3]  = para->softbutton_areas[0][3];
++    values[4]  = para->softbutton_areas[1][0];
++    values[5]  = para->softbutton_areas[1][1];
++    values[6]  = para->softbutton_areas[1][2];
++    values[7]  = para->softbutton_areas[1][3];
++    values[8]  = para->softbutton_areas[2][0];
++    values[9]  = para->softbutton_areas[2][1];
++    values[10] = para->softbutton_areas[2][2];
++    values[11] = para->softbutton_areas[2][3];
+     prop_softbutton_areas =
+-        InitAtom(pInfo->dev, SYNAPTICS_PROP_SOFTBUTTON_AREAS, 32, 8, values);
++        InitAtom(pInfo->dev, SYNAPTICS_PROP_SOFTBUTTON_AREAS, 32, 12, values);
+ }
+ 
+ void
+@@ -696,7 +700,7 @@ SetProperty(DeviceIntPtr dev, Atom property, XIPropertyValuePtr prop,
+     else if (property == prop_softbutton_areas) {
+         int *areas;
+ 
+-        if (prop->size != 8 || prop->format != 32 || prop->type != XA_INTEGER)
++        if (prop->size != 12 || prop->format != 32 || prop->type != XA_INTEGER)
+             return BadMatch;
+ 
+         areas = (int *) prop->data;
+@@ -705,6 +709,7 @@ SetProperty(DeviceIntPtr dev, Atom property, XIPropertyValuePtr prop,
+ 
+         memcpy(para->softbutton_areas[0], areas, 4 * sizeof(int));
+         memcpy(para->softbutton_areas[1], areas + 4, 4 * sizeof(int));
++        memcpy(para->softbutton_areas[2], areas + 8, 4 * sizeof(int));
+     }
+     else if (property == prop_noise_cancellation) {
+         INT32 *hyst;
+diff --git a/src/synaptics.c b/src/synaptics.c
+index 5b5e585..f515606 100644
+--- a/src/synaptics.c
++++ b/src/synaptics.c
+@@ -2494,8 +2494,10 @@ handle_clickfinger(SynapticsPrivate * priv, struct SynapticsHwState *hw)
+      * three fingers down: F3_CLICK
+      */
+ 
++    /*
+     if (para->clickpad)
+         nfingers = clickpad_guess_clickfingers(priv, hw);
++    */
+ 
+     switch (nfingers) {
+     case 1:
+-- 
+1.9.0
+
