@@ -24,6 +24,7 @@ source=(${url}/releases/individual/driver/${_pkgname}-${pkgver}.tar.bz2
 	0001-implement-trackpoint-wheel-emulation.patch
 	0005-can-be-responsive-to-touch-pressure-not-click.patch
 	0006-SoftButtonAreas-is-replaced-by-new-three-options.patch
+	0007-detect-palm-pressure.patch
 	0009-Set-default-finger_press-value-to-1000.-This-disable.patch
 	0010-Fix-xinput-properties-mismatch.patch
 	0011-Fix-unintended-right-button-click.patch
@@ -34,6 +35,7 @@ sha256sums=('02ec7fd68635bd67be10275ba23f6c301a9109d72cac9c8646e28842003c06b0'
             '430e8528a230ace300480f06d55937355b228e0dfe6009b9ddd375e844febc06'
             '16e17ed1403f6d409a00141f25883211f91f29f550c1e6e3f8ff95469f938455'
             '998447914ea75d363be29e1f5cb163bf8bfae3f2d93154f923ba007c7cc5afa8'
+            '750215baa375e83d77bc35906408bf340e26dc792ac7f460f37159d154413a6f'
             '0b927e491a716c525bcbd2e7b232ec6110b3ec925ccd68b9ee45270f4e4c8652'
             'c9e3b519e5c91947a18b08627d5351b254d99a4ae2f1763be95cab9c9f4e420a'
             '3028f8430195daaa68788c068adff749c271721be59bbee56936993d70656565'
@@ -53,6 +55,7 @@ synaptics.c,synapticsstr.h,synproto.c,synproto.h} src/
   patch -p1 -i ../0001-implement-trackpoint-wheel-emulation.patch
   patch -p1 -i ../0005-can-be-responsive-to-touch-pressure-not-click.patch
   patch -p1 -i ../0006-SoftButtonAreas-is-replaced-by-new-three-options.patch
+  patch -p1 -i ../0007-detect-palm-pressure.patch
   patch -p1 -i ../0009-Set-default-finger_press-value-to-1000.-This-disable.patch
   patch -p1 -i ../0010-Fix-xinput-properties-mismatch.patch
   patch -p1 -i ../0011-Fix-unintended-right-button-click.patch
